@@ -38,23 +38,32 @@ export class MockExpenses extends BasePage
         await expect(inputField).toBeVisible();
         await expect(inputField).toHaveAttribute('placeholder')
     }
-    public async CategorizeData(rawData: [string, string, number][])
+    public async submitInput(rawData: [string, string, number][])
     {
-        const formattedData: Transaction[] = rawData.map((item) => {
+        let formattedData: Transaction[] = rawData.map((item) => {
             return {
                 date: item[0],
                 description: item[1],
                 amount: item[2]
             }
         });
+        
         const inputField = await this.getElement(SelectorType.Locator,this.inputField);
         await inputField.fill(JSON.stringify(formattedData,null, 2));
         await this.clickElement(SelectorType.Locator,this.categorizeButton);
+    }
+
+    public async submitJSONInput(data:{date?: string;description?: string;amount?: number;}[])
+    {
+        const inputField = await this.getElement(SelectorType.Locator,this.inputField);
+        await inputField.fill(data.toLocaleString());
+        await this.clickElement(SelectorType.Locator,this.categorizeButton);
+    }
+    public async CategorizeData(rawData: [string, string, number][])
+    {
+        
+        await this.submitInput(rawData); 
         const categorizedExpenses = await this.readText(SelectorType.Locator,this.categorizedData)??'';
-        // if(!categorizedExpenses)
-        // {
-        //     throw new Error("Categorization failed");
-        // }
         try {
            return JSON.parse(categorizedExpenses).categorized
         }
@@ -64,6 +73,7 @@ export class MockExpenses extends BasePage
     }
     public async validateCategories(rawData: [string, string, number][])
     {
+        
         const parsedData: Categories[] = await this.CategorizeData(rawData); 
         for (const item of parsedData) {
             expect(item).toHaveProperty('date');
@@ -71,26 +81,38 @@ export class MockExpenses extends BasePage
             expect(item).toHaveProperty('amount');
             expect(item).toHaveProperty('category');
         }
+        
     }
-    public async validateCategorization(rawData: [string, string, number][],expectedCategory:string)
+    public async invalidInput(hasMissingProperty?:string)
     {
+        let message:String;
+        if(hasMissingProperty)
+            message="";
+        else 
+           message = "Invalid JSON: Unexpected token"
+        const errorMessage = await this.readText(SelectorType.Locator,this.categorizedData);
+        expect(errorMessage).toContain(message);
+    }
+    public async validateCategorization(rawData: [string, string, number][], expectedCategory: string) 
+    {
+        const parsedData: Categories[]=await this.CategorizeData(rawData);;
+        const mismatches: string[] = [];
 
-        const parsedData: Categories[] = await this.CategorizeData(rawData);
-        console.log(parsedData); 
         for (const item of parsedData) {
-            let isCategoryAccurate:boolean;
-            if(!this.constants.validCategories.includes(item.category))
-                throw new Error(`Invalid category: ${item.category} for description: ${item.description}`);
-            else
-            {
-                isCategoryAccurate = item.category.toLowerCase()===expectedCategory.toLowerCase();
+            if (!this.constants.validCategories.includes(item.category)|| item.description === '') {
+                mismatches.push(`Invalid category: ${item.category} for description: ${item.description}`);
+                continue;
             }
-            try {
-                expect(isCategoryAccurate).toBeTruthy();
-            }
-            catch (error) {
-                throw new Error(`Categorization failed for description: ${item.description}, expected category: ${expectedCategory}, actual category: ${item.category}`);
+
+            const isCategoryAccurate = item.category.toLowerCase() === expectedCategory.toLowerCase();
+
+            if (!isCategoryAccurate) {
+                mismatches.push(`Categorization failed for description: ${item.description}, expected: ${expectedCategory}, got: ${item.category}`);
             }
         }
+
+        // Fail the test at the end if there are mismatches
+        expect(mismatches, mismatches.join('\n')).toHaveLength(0);
     }
+
 }

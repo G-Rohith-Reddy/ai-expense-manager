@@ -16,7 +16,7 @@ export class ExcelReader
     {
         const workbook = XLSX.readFile(this.filePath);
         const sheet = workbook.Sheets[this.sheetName];
-        this.data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+        this.data = XLSX.utils.sheet_to_json(sheet,{ defval: '' });
         return this.data;
     }
 }

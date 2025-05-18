@@ -40,6 +40,6 @@ export function isRole(arg: any): arg is Roles {
   category: string;};
   export type Transaction = {
   date?: string;
-  description: string;
-  amount: number;
+  description?: string;
+  amount?: number;
 };
