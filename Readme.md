@@ -91,12 +91,9 @@ This opens an interactive HTML report in your browser.
 | `npm test`           | Run all Playwright tests          |
 | `npm run test:report`| Open the Playwright HTML report   |
 
-## License
-
-This project is licensed under the ISC License.
 
 ---
 
-**Maintainer:**  
+**Owner & Maintainer:**  
 Rohith Reddy Gundra  
 Rohith.gundra@hotmail.com
